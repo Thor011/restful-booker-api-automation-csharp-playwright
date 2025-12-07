@@ -1,0 +1,104 @@
+image: mcr.microsoft.com/dotnet/sdk:6.0
+
+stages:
+  - build
+  - test
+
+variables:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  BUILD_CONFIGURATION: Release
+
+before_script:
+  - dotnet --version
+
+# Build stage
+build:
+  stage: build
+  script:
+    - dotnet restore
+    - dotnet build --configuration $BUILD_CONFIGURATION --no-restore
+  artifacts:
+    paths:
+      - RestfulBookerApiTests.Tests/bin/$BUILD_CONFIGURATION/
+      - RestfulBookerApiTests.Tests/obj/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Test on Linux
+test:linux:
+  stage: test
+  dependencies:
+    - build
+  before_script:
+    - apt-get update
+    - apt-get install -y wget gnupg
+    - dotnet tool install --global Microsoft.Playwright.CLI
+    - export PATH="$PATH:$HOME/.dotnet/tools"
+    - playwright install --with-deps
+  script:
+    - dotnet test --configuration $BUILD_CONFIGURATION --no-build --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal"
+  artifacts:
+    when: always
+    paths:
+      - RestfulBookerApiTests.Tests/TestResults/
+    reports:
+      junit:
+        - RestfulBookerApiTests.Tests/TestResults/*.trx
+    expire_in: 30 days
+  coverage: '/\d+.\d+% lines covered/'
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Test on Windows (if Windows runners are available)
+test:windows:
+  stage: test
+  tags:
+    - windows
+  dependencies:
+    - build
+  before_script:
+    - dotnet tool install --global Microsoft.Playwright.CLI
+    - $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+    - playwright install --with-deps
+  script:
+    - dotnet test --configuration $BUILD_CONFIGURATION --no-build --logger "trx;LogFileName=test-results-windows.trx" --logger "console;verbosity=normal"
+  artifacts:
+    when: always
+    paths:
+      - RestfulBookerApiTests.Tests/TestResults/
+    reports:
+      junit:
+        - RestfulBookerApiTests.Tests/TestResults/*.trx
+    expire_in: 30 days
+  only:
+    - main
+    - develop
+    - merge_requests
+  allow_failure: true  # Allow failure if Windows runners not available
+
+# Nightly scheduled test run
+test:nightly:
+  stage: test
+  dependencies:
+    - build
+  before_script:
+    - apt-get update
+    - apt-get install -y wget gnupg
+    - dotnet tool install --global Microsoft.Playwright.CLI
+    - export PATH="$PATH:$HOME/.dotnet/tools"
+    - playwright install --with-deps
+  script:
+    - dotnet test --configuration $BUILD_CONFIGURATION --no-build --logger "trx;LogFileName=test-results-nightly.trx" --logger "console;verbosity=detailed"
+  artifacts:
+    when: always
+    paths:
+      - RestfulBookerApiTests.Tests/TestResults/
+    expire_in: 7 days
+  only:
+    - schedules
