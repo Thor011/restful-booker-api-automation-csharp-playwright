@@ -34,7 +34,7 @@ A production-ready API testing framework demonstrating modern test automation pr
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/restful-booker-api-automation-csharp-playwright.git
+git clone https://github.com/Thor011/restful-booker-api-automation-csharp-playwright.git
 cd restful-booker-api-automation-csharp-playwright
 
 # Restore NuGet packages
@@ -196,7 +196,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-**GitHub:** [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+**GitHub:** [@Thor011](https://github.com/Thor011)
 
 ---
 
